@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080b16"><title>NEXUS HOME 2.0</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#080b16;color:#eef4ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0%,#172a50,transparent 42%),#080b16;min-height:100vh}
+main{max-width:1100px;margin:auto;padding:26px 16px}.top,.tools{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.brand{font-size:25px;font-weight:850;letter-spacing:2px}.brand span{color:#69b3ff}
+.status,.pill{border:1px solid #344766;border-radius:999px;padding:8px 12px;color:#9dcaff;font-size:12px}
+.hero,.panel,.stat{background:#11182a;border:1px solid #263552;border-radius:17px;padding:20px}
+.hero{margin:24px 0;background:linear-gradient(120deg,#12213b,#211a36)}h1{font-size:clamp(28px,5vw,44px);margin:10px 0}h1 span{color:#8fc5ff}
+p,.muted{color:#9aa9c1;line-height:1.7}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.stat b{display:block;font-size:24px;margin-top:5px}.tools{margin:18px 0}
+input,select,button{background:#162642;color:#eef4ff;border:1px solid #38527a;border-radius:10px;padding:11px;font:inherit}
+input{flex:1;min-width:180px}button{cursor:pointer;background:linear-gradient(100deg,#2563eb,#7c3aed);border:0}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}td,th{text-align:left;padding:13px 9px;border-bottom:1px solid #263552}
+th{color:#9aa9c1;font-size:12px}a{color:#8fc5ff}.warning{margin-top:16px;padding:14px;background:#282115;border:1px solid #6a512b;border-radius:12px;color:#e8d3a5;font-size:13px}
+@media(max-width:620px){.stats{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:span 2}.tools>*{width:100%}main{padding:18px 11px}}
+</style></head>
+<body><main>
+<header class="top"><div><div class="brand">NEXUS <span>HOME</span> 2.0</div><div class="muted">公开网络节点目录 · 配置下载</div></div><div class="status" id="status">正在连接</div></header>
+<section class="hero"><div class="muted">COMMUNITY NETWORK EXPLORER</div><h1>探索公开 <span>网络出口</span></h1>
+<p>浏览公开共享的 OpenVPN 志愿节点，按国家、名称或 IP 搜索，并下载单节点配置。</p>
+<div class="stats"><div class="stat">节点数量<b id="count">—</b></div><div class="stat">国家 / 地区<b id="countries">—</b></div><div class="stat">更新时间<b id="updated" style="font-size:14px">—</b></div></div></section>
+<section class="panel"><div class="top"><b>节点浏览器</b><span class="pill" id="shown">等待数据</span></div>
+<div class="tools"><input id="q" placeholder="搜索国家、节点名称或 IP"><select id="country"><option value="">全部国家</option></select><select id="sort"><option value="speed">速度优先</option><option value="ping">延迟优先</option></select><button id="reload">刷新</button></div>
+<div class="tablewrap"><table><thead><tr><th>国家</th><th>节点 IP</th><th>延迟</th><th>速度</th><th>会话</th><th>配置</th></tr></thead><tbody id="rows"><tr><td colspan="6">正在加载…</td></tr></tbody></table></div></section>
+<div class="warning"><b>重要说明：</b>VPN Gate 是公开志愿者网络，不是家宽供应商。节点可能来自个人、学校或企业网络，不能保证住宅 ISP、稳定性或可用性。Cloudflare Workers 在本项目中负责目录和配置分发，不提供 OpenVPN TCP/UDP 隧道中继。请勿使用公共节点处理敏感账号或支付数据。</div>
+</main><script>
+const $=id=>document.getElementById(id);let nodes=[];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const speed=n=>n?((n/1e6).toFixed(1)+" Mbps"):"—";
+async function load(){ $("status").textContent="正在获取";$("reload").disabled=true;
+try{const r=await fetch("/api/nodes");if(!r.ok)throw Error("API "+r.status);const d=await r.json();nodes=d.nodes||[];
+$("count").textContent=d.count??nodes.length;$("countries").textContent=new Set(nodes.map(n=>n.countryCode)).size;
+$("updated").textContent=d.updatedAt?new Date(d.updatedAt).toLocaleString():"—";$("status").textContent="服务正常";
+const opts=[...new Map(nodes.map(n=>[n.countryCode,n.country])).entries()].sort((a,b)=>a[1].localeCompare(b[1]));
+$("country").innerHTML='<option value="">全部国家</option>'+opts.map(([c,n])=>'<option value="'+esc(c)+'">'+esc(n)+'</option>').join("");render();
+}catch(e){$("status").textContent="获取失败";$("rows").innerHTML='<tr><td colspan="6">'+esc(e.message)+'</td></tr>'}finally{$("reload").disabled=false}}
+function render(){const q=$("q").value.toLowerCase(),c=$("country").value;let list=nodes.filter(n=>(!c||n.countryCode===c)&&(!q||[n.ip,n.name,n.country].some(v=>String(v).toLowerCase().includes(q))));
+if($("sort").value==="ping")list.sort((a,b)=>(a.ping??999999)-(b.ping??999999));else list.sort((a,b)=>b.speed-a.speed);
+$("shown").textContent="显示 "+list.length+" / "+nodes.length;
+$("rows").innerHTML=list.map(n=>'<tr><td>'+esc(n.country)+' ('+esc(n.countryCode)+')</td><td>'+esc(n.ip)+'</td><td>'+(n.ping??"—")+' ms</td><td>'+speed(n.speed)+'</td><td>'+n.sessions+'</td><td><a href="/ovpn/'+encodeURIComponent(n.ip)+'.ovpn">下载 .ovpn</a></td></tr>').join("")||'<tr><td colspan="6">没有匹配节点</td></tr>'}
+["q","country","sort"].forEach(id=>$(id).addEventListener(id==="q"?"input":"change",render));$("reload").addEventListener("click",load);load();
+</script></body></html>
