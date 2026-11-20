@@ -1,0 +1,8 @@
+{
+  "name": "nexus-home",
+  "version": "2.0.0",
+  "private": true,
+  "description": "NEXUS HOME public volunteer VPN node directory",
+  "scripts": { "dev": "wrangler dev", "deploy": "wrangler deploy" },
+  "devDependencies": { "wrangler": "^4.0.0" }
+}
