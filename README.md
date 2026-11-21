@@ -5,6 +5,14 @@ Cloudflare Workers + Static Assets project for browsing public volunteer OpenVPN
 ## Important
 This project uses the public VPN Gate volunteer network. It does **not** provide guaranteed residential/home broadband IPs. Nodes may be hosted by individuals, schools, or companies. Cloudflare Workers here serve the directory and configuration downloads; they do not relay OpenVPN TCP/UDP tunnels or manufacture residential IP addresses.
 
+## Live deployment
+
+The current public Worker deployment is available at: https://nexus-home.yxing8454.workers.dev
+
+Health check: https://nexus-home.yxing8454.workers.dev/api/health
+
+Node API: https://nexus-home.yxing8454.workers.dev/api/nodes
+
 ## Features
 - Responsive dark web dashboard
 - Fetch and parse public VPN Gate node directory
