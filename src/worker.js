@@ -41,6 +41,12 @@ function parseCsv(text) {
 
 async function getNodes(env) {
   const now = Date.now();
+  const edgeCache = caches.default;
+  const cacheKey = new Request("https://nexus-home-cache.internal/nodes-v1");
+  if (!env.NODES) {
+    const cachedResponse = await edgeCache.match(cacheKey);
+    if (cachedResponse) return await cachedResponse.json();
+  }
   if (env.NODES) {
     const cached = await env.NODES.get("nodes", "json");
     if (cached && now - cached.updatedAt < CACHE_TTL * 1000) return cached;
@@ -64,7 +70,13 @@ async function getNodes(env) {
     .sort((a, b) => b.speed - a.speed)
     .slice(0, max);
   const result = { updatedAt: now, source: "VPN Gate public volunteer network", count: nodes.length, nodes };
-  if (env.NODES) await env.NODES.put("nodes", JSON.stringify(result), { expirationTtl: CACHE_TTL * 2 });
+  if (env.NODES) {
+    await env.NODES.put("nodes", JSON.stringify(result), { expirationTtl: CACHE_TTL * 2 });
+  } else {
+    await edgeCache.put(cacheKey, new Response(JSON.stringify(result), {
+      headers: { "content-type": "application/json", "cache-control": "public, max-age=" + CACHE_TTL }
+    }));
+  }
   return result;
 }
 
